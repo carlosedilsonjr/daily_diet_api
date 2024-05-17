@@ -6,26 +6,30 @@ app = Flask(__name__)
 meals = []
 meal_id_control = 1
 
-@app.route('/meal', methods=['POST'])
+@app.route('/meals', methods=['POST'])
 def create_meal():
     global meal_id_control
     data = request.get_json()
+
+    if not 'name' in data:
+        return jsonify({'error': 'payload incorrect'}), 400
+
     new_meal = Meal(id=meal_id_control, name=data['name'], description=data.get('description'), datetime=data.get('datetime'))
     meals.append(new_meal)
     meal_id_control += 1
     return jsonify(new_meal.to_dict())
 
-@app.route('/meal', methods=['GET'])
+@app.route('/meals', methods=['GET'])
 def list_all_meals():
     list_meals = [meal.to_dict() for meal in meals]
     output = {
-        'list_meals': list_meals,
+        'meals': list_meals,
         'total_meals': len(list_meals)
     }
  
     return jsonify(output)
 
-@app.route('/meal/<int:id>', methods=['GET'])
+@app.route('/meals/<int:id>', methods=['GET'])
 def list_one_meal(id):
     founded_meal = None
     for meal in meals:
@@ -38,7 +42,7 @@ def list_one_meal(id):
     
     return jsonify(founded_meal.to_dict()), 200
 
-@app.route('/meal/<int:id>', methods=['PUT'])
+@app.route('/meals/<int:id>', methods=['PUT'])
 def update_meal(id):
     founded_meal = None
     for meal in meals:
@@ -62,7 +66,7 @@ def update_meal(id):
     meals[index] = founded_meal
     return jsonify(founded_meal.to_dict()), 200
 
-@app.route('/meal/<int:id>', methods=['DELETE'])
+@app.route('/meals/<int:id>', methods=['DELETE'])
 def delete_meal(id):
     founded_meal = None
     for meal in meals:
