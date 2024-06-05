@@ -1,11 +1,13 @@
-class Meal:
-  def __init__(self, id: str, name: str, description: str, datetime: str, diet=False) -> None:
-    self.id = id
-    self.name = name
-    self.description = description
-    self.datetime = datetime
-    self.diet = diet
-  
+from database import db
+from sqlalchemy.orm import Mapped, mapped_column
+
+class Meal(db.Model):
+  id: Mapped[int] = mapped_column(primary_key=True, autoincrement="auto")
+  name: Mapped[str] = mapped_column()
+  description: Mapped[str] = mapped_column(nullable=True)
+  datetime: Mapped[str] = mapped_column()
+  diet: Mapped[bool] = mapped_column(default=False)
+
   def to_dict(self):
     return {
       "id": self.id,

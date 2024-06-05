@@ -1,26 +1,27 @@
 from flask import Flask, jsonify, request
 from models.meal import Meal
+from database import db
 
 app = Flask(__name__)
-
-meals = []
-meal_id_control = 1
+app.config['SECRET_KEY'] = "change for a enviroment password"
+app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///database.db"
+db.init_app(app)
 
 @app.route('/meals', methods=['POST'])
 def create_meal():
-    global meal_id_control
     data = request.get_json()
 
     if not 'name' in data:
         return jsonify({'error': 'payload incorrect'}), 400
 
-    new_meal = Meal(id=meal_id_control, name=data['name'], description=data.get('description'), datetime=data.get('datetime'))
-    meals.append(new_meal)
-    meal_id_control += 1
+    new_meal = Meal(name=data['name'], description=data.get('description'), datetime=data.get('datetime'))
+    db.session.add(new_meal)
+    db.session.commit()
     return jsonify(new_meal.to_dict())
 
 @app.route('/meals', methods=['GET'])
 def list_all_meals():
+    meals = Meal.query.all()
     list_meals = [meal.to_dict() for meal in meals]
     output = {
         'meals': list_meals,
@@ -31,54 +32,43 @@ def list_all_meals():
 
 @app.route('/meals/<int:id>', methods=['GET'])
 def list_one_meal(id):
-    founded_meal = None
-    for meal in meals:
-        if meal.id == id:
-            founded_meal = meal
-            break
+    meal = Meal.query.get(id)
     
-    if not founded_meal:
+    if not meal:
         return jsonify({'message': 'Not Found'}), 404
     
-    return jsonify(founded_meal.to_dict()), 200
+    return jsonify(meal.to_dict()), 200
 
 @app.route('/meals/<int:id>', methods=['PUT'])
 def update_meal(id):
-    founded_meal = None
-    for meal in meals:
-        if meal.id == id:
-            founded_meal = meal
+    meal = Meal.query.get(id)
 
-    if not founded_meal:
+    if not meal:
         return jsonify({'message': 'Not Found'}), 404 
     
-    index = meals.index(founded_meal)
     data = request.get_json()
     if data['name']:
-        founded_meal.name = data['name']
+        meal.name = data['name']
     if data['description']:
-        founded_meal.description = data['description']
+        meal.description = data['description']
     if data['datetime']:
-        founded_meal.datetime = data['datetime']
+        meal.datetime = data['datetime']
     if data['diet']:
-        founded_meal.diet = data['diet']
+        meal.diet = data['diet']
+    db.session.commit()
 
-    meals[index] = founded_meal
-    return jsonify(founded_meal.to_dict()), 200
+    return jsonify(meal.to_dict()), 200
 
 @app.route('/meals/<int:id>', methods=['DELETE'])
 def delete_meal(id):
-    founded_meal = None
-    for meal in meals:
-        if meal.id == id:
-            founded_meal = meal
-            break
+    meal = Meal.query.get(id)
     
-    if not founded_meal:
+    if not meal:
         return jsonify({'message': 'Not Found'}), 404
 
-    meals.remove(founded_meal)
-    return jsonify(founded_meal.to_dict()), 200
+    db.session.delete(meal)
+    db.session.commit()
+    return jsonify(meal.to_dict()), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
